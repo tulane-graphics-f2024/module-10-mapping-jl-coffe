@@ -137,44 +137,75 @@ bool Mesh::loadOBJ(const char * path){
   return true;
 }
 
-bool Mesh::makeSphere(int steps){
-  //TODO: Normals and texture coordinates
-  normals.push_back(vec3(0,0,1));
-  uvs.push_back(vec2(0,0));
+bool Mesh::makeSphere(int steps) {
+  vertices.clear();
+  normals.clear();
+  uvs.clear();
 
-  double step_theta = (2*M_PI)/(double)(steps-1);
-  double step_phi   = (M_PI)/(double)(steps-1);
-  
-  std::vector < vec3 > pstrip0;
-  std::vector < vec3 > pstrip1;
-  
-  //latitude
-  for(unsigned int i=0; i < steps; i++){
-    double phi = i*step_phi;
-    //longitude
-    for(unsigned int j=0; j < steps; j++){
-      double theta = j*step_theta;
-      vec3 p = vec3(-cos(theta)*sin(phi), cos(phi), sin(theta)*sin(phi));
-      pstrip1.push_back(p);
+  // Define the steps of theta (longitude) and phi (latitude)
+  double step_theta = (2 * M_PI) / (steps - 1);
+  double step_phi = M_PI / (steps - 1);
+
+  // Creates the vertices, normals, and texture coordinates of the sphere
+  for (unsigned int i = 0; i < steps; i++) {
+    double phi = i * step_phi;
+
+    for (unsigned int j = 0; j < steps; j++) {
+      double theta = j * step_theta;
+
+      float x = cos(theta) * sin(phi);
+      float y = cos(phi);
+      float z = sin(theta) * sin(phi);
+      vec3 vertex = vec3(x, y, z);
+
+      // Stores vertex positions, normals, and texture coordinates
+      vertices.push_back(vec4(vertex, 1.0));
+      normals.push_back(vertex);
+
+      // Adjust texture coordinates to ensure correct mapping
+      float u = 1.0f - (float)j / (steps - 1);
+      float v = 1.0f - (float)i / (steps - 1);
+      uvs.push_back(vec2(u, v));
     }
-    
-    for(unsigned int k=0; (k+1) < pstrip0.size(); k++){
-      vertices.push_back(pstrip0[k]);
-      
-      vertices.push_back(pstrip1[k]);
-      
-      vertices.push_back(pstrip0[k+1]);
-      
-      vertices.push_back(pstrip0[k+1]);
-      
-      vertices.push_back(pstrip1[k]);
-       
-      vertices.push_back(pstrip1[k+1]);
-    }
-    
-    pstrip1.swap(pstrip0);
-    pstrip1.clear();
   }
-  
+
+  // Create a triangle index, cover the entire sphere
+  std::vector<vec4> triangle_vertices;
+  std::vector<vec3> triangle_normals;
+  std::vector<vec2> triangle_uvs;
+
+  for (unsigned int i = 0; i < steps - 1; i++) {
+    for (unsigned int j = 0; j < steps - 1; j++) {
+
+      int current = i * steps + j;
+      int next = current + steps;
+
+      triangle_vertices.push_back(vertices[current]);
+      triangle_vertices.push_back(vertices[next]);
+      triangle_vertices.push_back(vertices[current + 1]);
+      triangle_normals.push_back(normals[current]);
+      triangle_normals.push_back(normals[next]);
+      triangle_normals.push_back(normals[current + 1]);
+      triangle_uvs.push_back(uvs[current]);
+      triangle_uvs.push_back(uvs[next]);
+      triangle_uvs.push_back(uvs[current + 1]);
+
+      triangle_vertices.push_back(vertices[current + 1]);
+      triangle_vertices.push_back(vertices[next]);
+      triangle_vertices.push_back(vertices[next + 1]);
+      triangle_normals.push_back(normals[current + 1]);
+      triangle_normals.push_back(normals[next]);
+      triangle_normals.push_back(normals[next + 1]);
+      triangle_uvs.push_back(uvs[current + 1]);
+      triangle_uvs.push_back(uvs[next]);
+      triangle_uvs.push_back(uvs[next + 1]);
+    }
+  }
+
+  // Update the final vertex, normal, and texture coordinate data
+  vertices = triangle_vertices;
+  normals = triangle_normals;
+  uvs = triangle_uvs;
+
   return true;
-  }
+}
