@@ -239,17 +239,26 @@ void init(){
   glGenTextures( 1, &cloud_texture );
   glGenTextures( 1, &perlin_texture);
   
-  std::string earth_img = source_path + "/images/checkerboard.png";
+  //std::string earth_img = source_path + "/images/checkerboard.png";
+  std::string earth_img = source_path + "/images/world.200405.3.png";
   loadFreeImageTexture(earth_img.c_str(), month_texture, GL_TEXTURE0);
-    
   glUniform1i( glGetUniformLocation(program, "textureEarth"), 0 );
 
   //TODO: ADD NIGHT TEXTURE
-
+  std::string night_img = source_path + "/images/BlackMarble.png";
+  loadFreeImageTexture(night_img.c_str(), night_texture, GL_TEXTURE1);
+  glUniform1i( glGetUniformLocation(program, "textureNight"), 1 );
+    
   //TODO: ADD CLOUD TEXTURE
-  
+  std::string cloud_img = source_path + "/images/cloud_combined.png";
+  loadFreeImageTexture(cloud_img.c_str(), cloud_texture, GL_TEXTURE2);
+  glUniform1i( glGetUniformLocation(program, "textureCloud"), 2 );
+    
   //TODO: ADD NOISE TEXTURE
-
+  // perlin_noise.png
+    
+    
+    
   glBindVertexArray( vao );
   glBindBuffer( GL_ARRAY_BUFFER, buffer );
   /* fill to size of vertices */{
@@ -313,14 +322,32 @@ void init(){
 }
 
 void animate(){
-  //Do 30 times per second
-  if(glfwGetTime() > (1.0/60.0)){
+    // last update time
+    static double lastTime = glfwGetTime();
+    
+    // Do 30 times per second
+    double currentTime = glfwGetTime();
+    double deltaTime = currentTime - lastTime;
 
-    animate_time = animate_time + 0.0001;
-    rotation_angle  = rotation_angle + 0.25;
+    if (deltaTime >= (1.0 / 30.0)) {  // Check if 1/30 of a sec has passed
+        animate_time += 0.008;
+        rotation_angle += 0.25;
 
-    glfwSetTime(0.0);
-  }
+        // Update light position to simulate the sun's movement
+        light_position.x = 10.0 * cos(animate_time);
+        light_position.z = 10.0 * sin(animate_time);
+
+        // Pass updated light position to the shader
+        glUniform4fv(glGetUniformLocation(program, "LightPosition"), 1, light_position);
+
+        // Reset for smooth rotation
+        if (animate_time > 2 * M_PI) {
+            animate_time -= 2 * M_PI;
+        }
+
+        // Update lastTime to current
+        lastTime = currentTime;
+    }
 }
 
 int main(void){
@@ -357,8 +384,9 @@ int main(void){
   
   init();
   
-  while (!glfwWindowShouldClose(window)){
+
     
+  while (!glfwWindowShouldClose(window)){
     //Display as wirfram, boolean tied to keystoke 'w'
     if(wireframe){
       glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
